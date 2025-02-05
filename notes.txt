@@ -1,0 +1,40 @@
+go get github.com/99designs/gqlgen@v0.17.45 && go get github.com/99designs/gqlgen/internal/imports@v0.17.45 && go get github.com/99designs/gqlgen/codegen/config@v0.17.45 && go get github.com/99designs/gqlgen/internal/imports@v0.17.45 && go mod download gopkg.in/yaml.v3 && go run github.com/99designs/gqlgen generate
+
+go run github.com/99designs/gqlgen generate
+
+Postgress sure db creation procedure:
+
+1. **Install PostgreSQL** (if not already installed):
+   - On Ubuntu:
+     sudo apt update
+     sudo apt install postgresql postgresql-contrib
+
+2. **Start the PostgreSQL service** (if not already running):
+   - On Ubuntu:
+     sudo systemctl start postgresql
+
+3. **Switch to the PostgreSQL user**:
+   sudo -i -u postgres
+
+4. **Open the PostgreSQL interactive terminal (`psql`)**:
+   psql
+
+5. **Create the database and user**:
+   - Create the database:
+     CREATE DATABASE demadb;
+
+   - Create the user (if not already existing):
+     CREATE USER postgres WITH PASSWORD '1331';
+
+   - Grant all privileges on the database to the user:
+     GRANT ALL PRIVILEGES ON DATABASE demadb TO postgres;
+
+6. **Exit the `psql` terminal**:
+   \q
+
+7. **Exit the PostgreSQL user session**:
+   exit
+
+Now, you should have a PostgreSQL database named `demadb` and a user `postgres` with the password `1331`. You can connect to this database using the provided `DATABASE_URL`.
+To test the connection from your application or another tool, you can use the following environment variable setting:
+export DATABASE_URL="postgresql://postgres:1331@localhost/demadb"

@@ -1,0 +1,112 @@
+directive @goField(
+  forceResolver: Boolean
+  name: String
+) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
+
+scalar Time
+scalar UUID
+
+type Mutation {
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+
+  createProduct(input: ProductInput!): Product!
+  updateProduct(id: UUID!, input: ProductInput!): Product!
+  deleteProduct(id: UUID!): Boolean!
+
+  createOrder(input: OrderInput!): Order!
+  updateOrderStatus(id: UUID!, status: OrderStatus!): Order!
+}
+
+type Query {
+  fetchProductsByCategoryId(categoryId: UUID): [Product!]!
+  fetchProductById(id: UUID!): Product
+  fetchAverageProductPriceByCategoryId(categoryId: UUID!): Float!
+  fetchCategories: [Category!]!
+  fetchCategoryById(id: UUID!): Category
+  fetchCustomer: Customer # Get authenticated customer
+  fetchCustomersOrders: [Order!]! # Get authenticated customer's orders
+  fetchOrderById(id: UUID!): Order
+}
+
+type Category {
+  id: UUID!
+  name: String!
+  parent: Category
+  children: [Category!]
+  products: [Product!]
+  level: Int!
+}
+
+type Product {
+  id: UUID!
+  name: String!
+  price: Float!
+  description: String
+  categories: [Category!]!
+}
+
+type Customer {
+  id: UUID!
+  name: String!
+  email: String!
+  phoneNumber: String!
+  orders: [Order!]!
+}
+
+type Order {
+  id: UUID!
+  customer: Customer!
+  items: [OrderItem!]!
+  totalAmount: Float!
+  status: OrderStatus!
+  createdAt: Time!
+}
+
+type OrderItem {
+  id: UUID!
+  product: Product!
+  quantity: Int!
+  price: Float!
+}
+
+type AuthPayload {
+  token: String!
+  customer: Customer!
+}
+
+input RegisterInput {
+  name: String!
+  email: String!
+  password: String!
+  phoneNumber: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input ProductInput {
+  name: String!
+  price: Float!
+  description: String
+  categoryIds: [UUID!]!
+}
+
+input OrderItemInput {
+  productId: UUID!
+  quantity: Int!
+}
+
+input OrderInput {
+  items: [OrderItemInput!]!
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
