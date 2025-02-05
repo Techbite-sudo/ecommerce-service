@@ -4,98 +4,104 @@ directive @goField(
 ) on INPUT_FIELD_DEFINITION | FIELD_DEFINITION
 
 scalar Time
-scalar UUID
-
-type Mutation {
-  register(input: RegisterInput!): AuthPayload!
-  login(input: LoginInput!): AuthPayload!
-
-  createProduct(input: ProductInput!): Product!
-  updateProduct(id: UUID!, input: ProductInput!): Product!
-  deleteProduct(id: UUID!): Boolean!
-
-  createOrder(input: OrderInput!): Order!
-  updateOrderStatus(id: UUID!, status: OrderStatus!): Order!
-}
 
 type Query {
-  fetchProductsByCategoryId(categoryId: UUID): [Product!]!
-  fetchProductById(id: UUID!): Product
-  fetchAverageProductPriceByCategoryId(categoryId: UUID!): Float!
-  fetchCategories: [Category!]!
-  fetchCategoryById(id: UUID!): Category
-  fetchCustomer: Customer # Get authenticated customer
-  fetchCustomersOrders: [Order!]! # Get authenticated customer's orders
-  fetchOrderById(id: UUID!): Order
+   # User queries
+  profile: User!
+  user(id: String!): User!
+
+  # Product queries
+  products(categoryId: String, search: String): [Product!]!
+  product(id: String!): Product
+
+  # Category queries
+  categories: [Category!]!
+  category(id: String!): Category
+  categoryAveragePrice(id: String!): Float!
+
+  # Order queries
+  myOrders: [Order!]!
+  order(id: String!): Order
+}
+
+type Mutation {
+  # User mutations
+  # RegisterUser(input: RegisterUserInput!): AuthPayload!
+  # Login(input: LoginInput!): AuthPayload!
+  updateProfile(input: UpdateProfileInput!): User!
+  PasswordResetRequest(email: String!): String!
+  ResetPassword(input: PasswordResetInput): Boolean!
+
+  # Product mutations
+  createProduct(input: ProductInput!): Product!
+  updateProduct(id: String!, input: ProductInput!): Product!
+  deleteProduct(id: String!): Boolean!
+
+  # Category mutations
+  createCategory(input: CategoryInput!): Category!
+  updateCategory(id: String!, input: CategoryInput!): Category!
+  deleteCategory(id: String!): Boolean!
+
+  # Order mutations
+  createOrder(input: OrderInput!): Order!
+  updateOrderStatus(id: String!, status: OrderStatus!): Order!
 }
 
 type Category {
-  id: UUID!
+  id: ID!
   name: String!
+  parentId: String
   parent: Category
   children: [Category!]
   products: [Product!]
   level: Int!
+  createdAt: Time!
 }
 
 type Product {
-  id: UUID!
+  id: ID!
   name: String!
-  price: Float!
   description: String
+  price: Float!
+  sku: String!
   categories: [Category!]!
-}
-
-type Customer {
-  id: UUID!
-  name: String!
-  email: String!
-  phoneNumber: String!
-  orders: [Order!]!
+  stock: Int!
+  createdAt: Time!
 }
 
 type Order {
-  id: UUID!
-  customer: Customer!
+  id: ID!
+  customer: User!
   items: [OrderItem!]!
-  totalAmount: Float!
   status: OrderStatus!
+  total: Float!
   createdAt: Time!
 }
 
 type OrderItem {
-  id: UUID!
+  id: ID!
   product: Product!
   quantity: Int!
-  price: Float!
-}
-
-type AuthPayload {
-  token: String!
-  customer: Customer!
-}
-
-input RegisterInput {
-  name: String!
-  email: String!
-  password: String!
-  phoneNumber: String!
-}
-
-input LoginInput {
-  email: String!
-  password: String!
+  unitPrice: Float!
+  subTotal: Float!
 }
 
 input ProductInput {
   name: String!
-  price: Float!
   description: String
-  categoryIds: [UUID!]!
+  price: Float!
+  sku: String!
+  categoryIds: [String!]!
+  stock: Int!
+}
+
+input CategoryInput {
+  name: String!
+  parentId: String
 }
 
 input OrderItemInput {
-  productId: UUID!
+  productId: String!
   quantity: Int!
 }
 
@@ -103,10 +109,55 @@ input OrderInput {
   items: [OrderItemInput!]!
 }
 
+input UpdateProfileInput {
+  phoneNumber: String
+  country: String
+}
+
 enum OrderStatus {
   PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
+  PROCESSING
+  COMPLETED
   CANCELLED
+}
+
+type User {
+  id: String!
+  names: String!
+  email: String!
+  password: String!
+  phoneNumber: String!
+  country: String!
+  role: Role!
+  createdAt: Time!
+}
+
+type AuthPayload {
+  token: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RegisterUserInput {
+  names: String!
+  email: String!
+  password: String!
+  confirmPassword: String!
+  phoneNumber: String!
+  country: String!
+  role: Role!
+}
+
+input PasswordResetInput {
+  token: String!
+  newPassword: String!
+  confirmPassword: String!
+}
+
+enum Role {
+  USER
+  ADMIN
 }

@@ -6,85 +6,115 @@ package graph
 
 import (
 	"context"
+	"ecommerce-service/engine/categories"
+	"ecommerce-service/engine/orders"
+	"ecommerce-service/engine/products"
+	"ecommerce-service/engine/users"
 	"ecommerce-service/graph/model"
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
-// Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, input model.RegisterInput) (*model.AuthPayload, error) {
-	panic(fmt.Errorf("not implemented: Register - register"))
+// UpdateProfile is the resolver for the updateProfile field.
+func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.UpdateProfileInput) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: UpdateProfile - updateProfile"))
 }
 
-// Login is the resolver for the login field.
-func (r *mutationResolver) Login(ctx context.Context, input model.LoginInput) (*model.AuthPayload, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+// PasswordResetRequest is the resolver for the PasswordResetRequest field.
+func (r *mutationResolver) PasswordResetRequest(ctx context.Context, email string) (string, error) {
+	return users.PasswordResetRequest(email)
+}
+
+// ResetPassword is the resolver for the ResetPassword field.
+func (r *mutationResolver) ResetPassword(ctx context.Context, input *model.PasswordResetInput) (bool, error) {
+	return users.ResetPassword(input)
 }
 
 // CreateProduct is the resolver for the createProduct field.
 func (r *mutationResolver) CreateProduct(ctx context.Context, input model.ProductInput) (*model.Product, error) {
-	panic(fmt.Errorf("not implemented: CreateProduct - createProduct"))
+	return products.CreateProduct(input)
 }
 
 // UpdateProduct is the resolver for the updateProduct field.
-func (r *mutationResolver) UpdateProduct(ctx context.Context, id uuid.UUID, input model.ProductInput) (*model.Product, error) {
-	panic(fmt.Errorf("not implemented: UpdateProduct - updateProduct"))
+func (r *mutationResolver) UpdateProduct(ctx context.Context, id string, input model.ProductInput) (*model.Product, error) {
+	return products.UpdateProduct(id, input)
 }
 
 // DeleteProduct is the resolver for the deleteProduct field.
-func (r *mutationResolver) DeleteProduct(ctx context.Context, id uuid.UUID) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteProduct - deleteProduct"))
+func (r *mutationResolver) DeleteProduct(ctx context.Context, id string) (bool, error) {
+	return products.DeleteProduct(id)
+}
+
+// CreateCategory is the resolver for the createCategory field.
+func (r *mutationResolver) CreateCategory(ctx context.Context, input model.CategoryInput) (*model.Category, error) {
+	return categories.CreateCategory(input)
+}
+
+// UpdateCategory is the resolver for the updateCategory field.
+func (r *mutationResolver) UpdateCategory(ctx context.Context, id string, input model.CategoryInput) (*model.Category, error) {
+	panic(fmt.Errorf("not implemented: UpdateCategory - updateCategory"))
+}
+
+// DeleteCategory is the resolver for the deleteCategory field.
+func (r *mutationResolver) DeleteCategory(ctx context.Context, id string) (bool, error) {
+	panic(fmt.Errorf("not implemented: DeleteCategory - deleteCategory"))
 }
 
 // CreateOrder is the resolver for the createOrder field.
 func (r *mutationResolver) CreateOrder(ctx context.Context, input model.OrderInput) (*model.Order, error) {
-	panic(fmt.Errorf("not implemented: CreateOrder - createOrder"))
+	user := ctx.Value("user").(string)
+	return orders.CreateOrder(input, user)
 }
 
 // UpdateOrderStatus is the resolver for the updateOrderStatus field.
-func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, id uuid.UUID, status model.OrderStatus) (*model.Order, error) {
+func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, id string, status model.OrderStatus) (*model.Order, error) {
 	panic(fmt.Errorf("not implemented: UpdateOrderStatus - updateOrderStatus"))
 }
 
-// FetchProductsByCategoryID is the resolver for the fetchProductsByCategoryId field.
-func (r *queryResolver) FetchProductsByCategoryID(ctx context.Context, categoryID *uuid.UUID) ([]*model.Product, error) {
-	panic(fmt.Errorf("not implemented: FetchProductsByCategoryID - fetchProductsByCategoryId"))
+// Profile is the resolver for the profile field.
+func (r *queryResolver) Profile(ctx context.Context) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: Profile - profile"))
 }
 
-// FetchProductByID is the resolver for the fetchProductById field.
-func (r *queryResolver) FetchProductByID(ctx context.Context, id uuid.UUID) (*model.Product, error) {
-	panic(fmt.Errorf("not implemented: FetchProductByID - fetchProductById"))
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: User - user"))
 }
 
-// FetchAverageProductPriceByCategoryID is the resolver for the fetchAverageProductPriceByCategoryId field.
-func (r *queryResolver) FetchAverageProductPriceByCategoryID(ctx context.Context, categoryID uuid.UUID) (float64, error) {
-	panic(fmt.Errorf("not implemented: FetchAverageProductPriceByCategoryID - fetchAverageProductPriceByCategoryId"))
+// Products is the resolver for the products field.
+func (r *queryResolver) Products(ctx context.Context, categoryID *string, search *string) ([]*model.Product, error) {
+	return products.GetProducts(categoryID)
 }
 
-// FetchCategories is the resolver for the fetchCategories field.
-func (r *queryResolver) FetchCategories(ctx context.Context) ([]*model.Category, error) {
-	panic(fmt.Errorf("not implemented: FetchCategories - fetchCategories"))
+// Product is the resolver for the product field.
+func (r *queryResolver) Product(ctx context.Context, id string) (*model.Product, error) {
+	return products.GetProductByID(id)
 }
 
-// FetchCategoryByID is the resolver for the fetchCategoryById field.
-func (r *queryResolver) FetchCategoryByID(ctx context.Context, id uuid.UUID) (*model.Category, error) {
-	panic(fmt.Errorf("not implemented: FetchCategoryByID - fetchCategoryById"))
+// Categories is the resolver for the categories field.
+func (r *queryResolver) Categories(ctx context.Context) ([]*model.Category, error) {
+	return categories.GetCategories()
 }
 
-// FetchCustomer is the resolver for the fetchCustomer field.
-func (r *queryResolver) FetchCustomer(ctx context.Context) (*model.Customer, error) {
-	panic(fmt.Errorf("not implemented: FetchCustomer - fetchCustomer"))
+// Category is the resolver for the category field.
+func (r *queryResolver) Category(ctx context.Context, id string) (*model.Category, error) {
+	return categories.GetCategoryByID(id)
 }
 
-// FetchCustomersOrders is the resolver for the fetchCustomersOrders field.
-func (r *queryResolver) FetchCustomersOrders(ctx context.Context) ([]*model.Order, error) {
-	panic(fmt.Errorf("not implemented: FetchCustomersOrders - fetchCustomersOrders"))
+// CategoryAveragePrice is the resolver for the categoryAveragePrice field.
+func (r *queryResolver) CategoryAveragePrice(ctx context.Context, id string) (float64, error) {
+	return products.GetCategoryAveragePrice(id)
 }
 
-// FetchOrderByID is the resolver for the fetchOrderById field.
-func (r *queryResolver) FetchOrderByID(ctx context.Context, id uuid.UUID) (*model.Order, error) {
-	panic(fmt.Errorf("not implemented: FetchOrderByID - fetchOrderById"))
+// MyOrders is the resolver for the myOrders field.
+func (r *queryResolver) MyOrders(ctx context.Context) ([]*model.Order, error) {
+	user := ctx.Value("user").(string)
+	return orders.GetUserOrders(user)
+}
+
+// Order is the resolver for the order field.
+func (r *queryResolver) Order(ctx context.Context, id string) (*model.Order, error) {
+	user := ctx.Value("user").(string)
+	return orders.GetOrder(id, user)
 }
 
 // Mutation returns MutationResolver implementation.

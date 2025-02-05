@@ -7,30 +7,26 @@ import (
 	"io"
 	"strconv"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type AuthPayload struct {
-	Token    string    `json:"token"`
-	Customer *Customer `json:"customer"`
+	Token string `json:"token"`
 }
 
 type Category struct {
-	ID       uuid.UUID   `json:"id"`
-	Name     string      `json:"name"`
-	Parent   *Category   `json:"parent,omitempty"`
-	Children []*Category `json:"children,omitempty"`
-	Products []*Product  `json:"products,omitempty"`
-	Level    int32       `json:"level"`
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	ParentID  *string     `json:"parentId,omitempty"`
+	Parent    *Category   `json:"parent,omitempty"`
+	Children  []*Category `json:"children,omitempty"`
+	Products  []*Product  `json:"products,omitempty"`
+	Level     int32       `json:"level"`
+	CreatedAt time.Time   `json:"createdAt"`
 }
 
-type Customer struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Email       string    `json:"email"`
-	PhoneNumber string    `json:"phoneNumber"`
-	Orders      []*Order  `json:"orders"`
+type CategoryInput struct {
+	Name     string  `json:"name"`
+	ParentID *string `json:"parentId,omitempty"`
 }
 
 type LoginInput struct {
@@ -42,12 +38,12 @@ type Mutation struct {
 }
 
 type Order struct {
-	ID          uuid.UUID    `json:"id"`
-	Customer    *Customer    `json:"customer"`
-	Items       []*OrderItem `json:"items"`
-	TotalAmount float64      `json:"totalAmount"`
-	Status      OrderStatus  `json:"status"`
-	CreatedAt   time.Time    `json:"createdAt"`
+	ID        string       `json:"id"`
+	Customer  *User        `json:"customer"`
+	Items     []*OrderItem `json:"items"`
+	Status    OrderStatus  `json:"status"`
+	Total     float64      `json:"total"`
+	CreatedAt time.Time    `json:"createdAt"`
 }
 
 type OrderInput struct {
@@ -55,63 +51,92 @@ type OrderInput struct {
 }
 
 type OrderItem struct {
-	ID       uuid.UUID `json:"id"`
-	Product  *Product  `json:"product"`
-	Quantity int32     `json:"quantity"`
-	Price    float64   `json:"price"`
+	ID        string   `json:"id"`
+	Product   *Product `json:"product"`
+	Quantity  int32    `json:"quantity"`
+	UnitPrice float64  `json:"unitPrice"`
+	SubTotal  float64  `json:"subTotal"`
 }
 
 type OrderItemInput struct {
-	ProductID uuid.UUID `json:"productId"`
-	Quantity  int32     `json:"quantity"`
+	ProductID string `json:"productId"`
+	Quantity  int32  `json:"quantity"`
+}
+
+type PasswordResetInput struct {
+	Token           string `json:"token"`
+	NewPassword     string `json:"newPassword"`
+	ConfirmPassword string `json:"confirmPassword"`
 }
 
 type Product struct {
-	ID          uuid.UUID   `json:"id"`
+	ID          string      `json:"id"`
 	Name        string      `json:"name"`
-	Price       float64     `json:"price"`
 	Description *string     `json:"description,omitempty"`
+	Price       float64     `json:"price"`
+	Sku         string      `json:"sku"`
 	Categories  []*Category `json:"categories"`
+	Stock       int32       `json:"stock"`
+	CreatedAt   time.Time   `json:"createdAt"`
 }
 
 type ProductInput struct {
-	Name        string      `json:"name"`
-	Price       float64     `json:"price"`
-	Description *string     `json:"description,omitempty"`
-	CategoryIds []uuid.UUID `json:"categoryIds"`
+	Name        string   `json:"name"`
+	Description *string  `json:"description,omitempty"`
+	Price       float64  `json:"price"`
+	Sku         string   `json:"sku"`
+	CategoryIds []string `json:"categoryIds"`
+	Stock       int32    `json:"stock"`
 }
 
 type Query struct {
 }
 
-type RegisterInput struct {
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	Password    string `json:"password"`
-	PhoneNumber string `json:"phoneNumber"`
+type RegisterUserInput struct {
+	Names           string `json:"names"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirmPassword"`
+	PhoneNumber     string `json:"phoneNumber"`
+	Country         string `json:"country"`
+	Role            Role   `json:"role"`
+}
+
+type UpdateProfileInput struct {
+	PhoneNumber *string `json:"phoneNumber,omitempty"`
+	Country     *string `json:"country,omitempty"`
+}
+
+type User struct {
+	ID          string    `json:"id"`
+	Names       string    `json:"names"`
+	Email       string    `json:"email"`
+	Password    string    `json:"password"`
+	PhoneNumber string    `json:"phoneNumber"`
+	Country     string    `json:"country"`
+	Role        Role      `json:"role"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 type OrderStatus string
 
 const (
-	OrderStatusPending   OrderStatus = "PENDING"
-	OrderStatusConfirmed OrderStatus = "CONFIRMED"
-	OrderStatusShipped   OrderStatus = "SHIPPED"
-	OrderStatusDelivered OrderStatus = "DELIVERED"
-	OrderStatusCancelled OrderStatus = "CANCELLED"
+	OrderStatusPending    OrderStatus = "PENDING"
+	OrderStatusProcessing OrderStatus = "PROCESSING"
+	OrderStatusCompleted  OrderStatus = "COMPLETED"
+	OrderStatusCancelled  OrderStatus = "CANCELLED"
 )
 
 var AllOrderStatus = []OrderStatus{
 	OrderStatusPending,
-	OrderStatusConfirmed,
-	OrderStatusShipped,
-	OrderStatusDelivered,
+	OrderStatusProcessing,
+	OrderStatusCompleted,
 	OrderStatusCancelled,
 }
 
 func (e OrderStatus) IsValid() bool {
 	switch e {
-	case OrderStatusPending, OrderStatusConfirmed, OrderStatusShipped, OrderStatusDelivered, OrderStatusCancelled:
+	case OrderStatusPending, OrderStatusProcessing, OrderStatusCompleted, OrderStatusCancelled:
 		return true
 	}
 	return false
@@ -135,5 +160,46 @@ func (e *OrderStatus) UnmarshalGQL(v any) error {
 }
 
 func (e OrderStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Role string
+
+const (
+	RoleUser  Role = "USER"
+	RoleAdmin Role = "ADMIN"
+)
+
+var AllRole = []Role{
+	RoleUser,
+	RoleAdmin,
+}
+
+func (e Role) IsValid() bool {
+	switch e {
+	case RoleUser, RoleAdmin:
+		return true
+	}
+	return false
+}
+
+func (e Role) String() string {
+	return string(e)
+}
+
+func (e *Role) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Role(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Role", str)
+	}
+	return nil
+}
+
+func (e Role) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

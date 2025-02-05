@@ -31,7 +31,7 @@ func InitialiseDB() {
 	setupModels(
 		&models.Category{},
 		&models.Product{},
-		&models.Customer{},
+		&models.User{},
 		&models.Order{},
 		&models.OrderItem{},
 	)
