@@ -11,12 +11,21 @@ import (
 	"ecommerce-service/engine/products"
 	"ecommerce-service/engine/users"
 	"ecommerce-service/graph/model"
+	"ecommerce-service/middleware"
+	"ecommerce-service/models"
+	"errors"
 	"fmt"
 )
 
 // UpdateProfile is the resolver for the updateProfile field.
 func (r *mutationResolver) UpdateProfile(ctx context.Context, input model.UpdateProfileInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateProfile - updateProfile"))
+	// Get the authenticated user ID from context
+	userID := ctx.Value("user").(string)
+	if userID == "" {
+		return nil, errors.New("unauthorized")
+	}
+	// Update user profile using the users package
+	return users.UpdateUserProfile(userID, input)
 }
 
 // PasswordResetRequest is the resolver for the PasswordResetRequest field.
@@ -51,7 +60,7 @@ func (r *mutationResolver) CreateCategory(ctx context.Context, input model.Categ
 
 // UpdateCategory is the resolver for the updateCategory field.
 func (r *mutationResolver) UpdateCategory(ctx context.Context, id string, input model.CategoryInput) (*model.Category, error) {
-	panic(fmt.Errorf("not implemented: UpdateCategory - updateCategory"))
+	return categories.UpdateCategory(id, input)
 }
 
 // DeleteCategory is the resolver for the deleteCategory field.
@@ -67,7 +76,12 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input model.OrderInp
 
 // UpdateOrderStatus is the resolver for the updateOrderStatus field.
 func (r *mutationResolver) UpdateOrderStatus(ctx context.Context, id string, status model.OrderStatus) (*model.Order, error) {
-	panic(fmt.Errorf("not implemented: UpdateOrderStatus - updateOrderStatus"))
+	// Verify user is admin
+	if err := middleware.RequireRole(ctx, models.RoleAdmin); err != nil {
+		return nil, err
+	}
+
+	return orders.UpdateOrderStatus(id, status)
 }
 
 // Profile is the resolver for the profile field.
@@ -82,7 +96,7 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 
 // Products is the resolver for the products field.
 func (r *queryResolver) Products(ctx context.Context, categoryID *string, search *string) ([]*model.Product, error) {
-	return products.GetProducts(categoryID)
+	return products.GetProducts(categoryID, search)
 }
 
 // Product is the resolver for the product field.

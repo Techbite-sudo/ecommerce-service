@@ -90,11 +90,17 @@ func ResetPassword(input *model.PasswordResetInput) (bool, error) {
 }
 
 func UpdateUserProfile(userID string, input model.UpdateProfileInput) (*model.User, error) {
+	userUUID, err := uuid.FromString(userID)
+	if err != nil {
+		return nil, err
+	}
+
 	var user models.User
-	if err := utils.DB.First(&user, "id = ?", userID).Error; err != nil {
+	if err := utils.DB.First(&user, "id = ?", userUUID).Error; err != nil {
 		return nil, ErrUserNotFound
 	}
 
+	// Update fields if provided
 	if input.PhoneNumber != nil {
 		user.PhoneNumber = *input.PhoneNumber
 	}
@@ -102,6 +108,7 @@ func UpdateUserProfile(userID string, input model.UpdateProfileInput) (*model.Us
 		user.Country = *input.Country
 	}
 
+	// Save updates
 	if err := utils.DB.Save(&user).Error; err != nil {
 		return nil, err
 	}

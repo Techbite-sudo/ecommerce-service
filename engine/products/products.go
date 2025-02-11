@@ -41,18 +41,27 @@ func CreateProduct(input model.ProductInput) (*model.Product, error) {
 	return product.ToGraphQL(), nil
 }
 
-func GetProducts(categoryID *string) ([]*model.Product, error) {
+func GetProducts(categoryID *string, search *string) ([]*model.Product, error) {
 	var products []models.Product
 	query := utils.DB.Preload("Categories")
 
+	// Apply category filter if provided
 	if categoryID != nil {
 		catUUID, err := uuid.FromString(*categoryID)
 		if err != nil {
 			return nil, err
 		}
-
 		query = query.Joins("JOIN category_products cp ON cp.product_id = products.id").
 			Where("cp.category_id = ?", catUUID)
+	}
+
+	// Apply search filter if provided
+	if search != nil && *search != "" {
+		searchTerm := "%" + *search + "%"
+		query = query.Where(
+			"products.name ILIKE ? OR products.description ILIKE ? OR products.sku ILIKE ?",
+			searchTerm, searchTerm, searchTerm,
+		)
 	}
 
 	if err := query.Find(&products).Error; err != nil {

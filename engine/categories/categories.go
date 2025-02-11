@@ -68,3 +68,60 @@ func GetCategoryByID(id string) (*model.Category, error) {
 
 	return category.ToGraphQL(), nil
 }
+
+func UpdateCategory(id string, input model.CategoryInput) (*model.Category, error) {
+	catUUID, err := uuid.FromString(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var category models.Category
+	if err := utils.DB.First(&category, "id = ?", catUUID).Error; err != nil {
+		return nil, err
+	}
+
+	// Update the name
+	category.Name = input.Name
+
+	// Update parent if provided
+	if input.ParentID != nil {
+		parentUUID, err := uuid.FromString(*input.ParentID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Verify parent exists
+		var parent models.Category
+		if err := utils.DB.First(&parent, "id = ?", parentUUID).Error; err != nil {
+			return nil, err
+		}
+
+		// Check for circular reference
+		if parent.ID == category.ID {
+			return nil, errors.New("category cannot be its own parent")
+		}
+
+		// Check if new parent would create too deep nesting
+		if parent.Level >= 4 {
+			return nil, errors.New("maximum category nesting level would be exceeded")
+		}
+
+		category.ParentID = &parentUUID
+		category.Level = parent.Level + 1
+	} else {
+		category.ParentID = nil
+		category.Level = 0
+	}
+
+	// Save updates
+	if err := utils.DB.Save(&category).Error; err != nil {
+		return nil, err
+	}
+
+	// Reload category with relationships
+	if err := utils.DB.Preload("Children").Preload("Products").First(&category, "id = ?", catUUID).Error; err != nil {
+		return nil, err
+	}
+
+	return category.ToGraphQL(), nil
+}

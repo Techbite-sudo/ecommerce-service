@@ -6,6 +6,8 @@ import (
 	"ecommerce-service/models"
 	"ecommerce-service/utils"
 	"errors"
+	"fmt"
+	"log"
 
 	uuid "github.com/satori/go.uuid"
 )
@@ -106,6 +108,7 @@ func CreateOrder(input model.OrderInput, userID string) (*model.Order, error) {
 
 	return order.ToGraphQL(), nil
 }
+
 func GetOrder(id string, userID string) (*model.Order, error) {
 	orderUUID, err := uuid.FromString(id)
 	if err != nil {
@@ -144,4 +147,58 @@ func GetUserOrders(userID string) ([]*model.Order, error) {
 	}
 
 	return result, nil
+}
+
+func UpdateOrderStatus(id string, status model.OrderStatus) (*model.Order, error) {
+	orderUUID, err := uuid.FromString(id)
+	if err != nil {
+		return nil, err
+	}
+
+	tx := utils.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	var order models.Order
+	if err := tx.Preload("Customer").Preload("Items.Product").First(&order, "id = ?", orderUUID).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// Update status
+	order.Status = models.OrderStatus(status)
+
+	if err := tx.Save(&order).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		return nil, err
+	}
+
+	// Send notifications asynchronously
+	go func() {
+		// Send SMS notification to customer
+		message := fmt.Sprintf(
+			"Your order #%s status has been updated to %s",
+			order.ID.String()[:8],
+			status,
+		)
+		fmt.Println(message)
+		if err := notifications.SendOrderConfirmationSMS(&order); err != nil {
+			log.Printf("Failed to send SMS notification: %v", err)
+		}
+
+		// Send email notification
+		if err := notifications.SendOrderNotificationEmail(&order); err != nil {
+			log.Printf("Failed to send email notification: %v", err)
+		}
+	}()
+
+	return order.ToGraphQL(), nil
 }
